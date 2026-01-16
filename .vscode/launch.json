@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot - User Service",
+      "request": "launch",
+      "mainClass": "com.example.user_service.UserApplication",
+      "env": {
+        "DB_HOST": "localhost",
+        "DB_PORT": "5432",
+        "DB_NAME": "user_service",
+        "DB_USERNAME": "postgres",
+        "DB_PASSWORD": "postgres",
+        "MAIL_HOST": "smtp.gmail.com",
+        "MAIL_PORT": "587",
+        "MAIL_USERNAME": "renukaprasadms00@gmail.com",
+        "MAIL_PASSWORD": "lbyb tszf qeeq jnhc"
+      }
+    }
+  ]
+}

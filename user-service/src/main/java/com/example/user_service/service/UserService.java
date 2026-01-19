@@ -11,6 +11,7 @@ import com.example.user_service.exception.InternalServerException;
 import com.example.user_service.repository.EmailOtpRepository;
 import com.example.user_service.repository.RoleRepository;
 import com.example.user_service.repository.UserRepository;
+import com.example.user_service.service.auth.EmailService;
 import com.example.user_service.utils.Otp;
 
 @Service

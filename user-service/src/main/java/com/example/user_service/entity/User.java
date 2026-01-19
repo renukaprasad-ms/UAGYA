@@ -32,8 +32,6 @@ public class User {
     @Column(nullable = false)
     private UserStatus status;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private java.util.List<UserSubscription> subscriptions;
 
     @Column(name = "is_email_verified", nullable = false)
     private boolean isEmailVerified;
@@ -95,9 +93,7 @@ public class User {
         return status;
     }
 
-    public java.util.List<UserSubscription> getSubscriptions() {
-        return subscriptions;
-    }
+   
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

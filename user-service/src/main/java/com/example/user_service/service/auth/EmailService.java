@@ -1,4 +1,4 @@
-package com.example.user_service.service;
+package com.example.user_service.service.auth;
 
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;

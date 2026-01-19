@@ -1,4 +1,4 @@
-package com.example.user_service.service;
+package com.example.user_service.service.auth;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -38,7 +38,7 @@ public class JwtService {
                 .expiresAt(now.plus(minutes, ChronoUnit.MINUTES))
                 .subject(user.getEmail())
                 .claim("userId", user.getId())
-                .claim("role", user.getRole())
+                .claim("role", user.getRoleName())
                 .build();
 
         return jwtEncoder.encode(

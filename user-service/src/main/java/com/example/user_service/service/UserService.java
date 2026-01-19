@@ -1,12 +1,13 @@
 package com.example.user_service.service;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.example.user_service.dto.UserCreateRequest;
+import com.example.user_service.dto.user.UserCreateRequest;
 import com.example.user_service.entity.EmailOtp;
 import com.example.user_service.entity.Role;
 import com.example.user_service.entity.User;
+import com.example.user_service.exception.BadRequestException;
+import com.example.user_service.exception.InternalServerException;
 import com.example.user_service.repository.EmailOtpRepository;
 import com.example.user_service.repository.RoleRepository;
 import com.example.user_service.repository.UserRepository;
@@ -22,7 +23,8 @@ public class UserService {
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public UserService(UserRepository userRepository, RoleRepository roleRepository, Otp otpUtil, EmailOtpRepository emailOtpRepository, EmailService email) {
+    public UserService(UserRepository userRepository, RoleRepository roleRepository, Otp otpUtil,
+            EmailOtpRepository emailOtpRepository, EmailService email) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.otpUtil = otpUtil;
@@ -31,12 +33,13 @@ public class UserService {
     }
 
     public User createUser(UserCreateRequest request) {
+
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exits");
+            throw new BadRequestException("Email already exists");
         }
 
         Role role = roleRepository.findByrole("user")
-                .orElseThrow(() -> new RuntimeException("Role USER not found"));
+                .orElseThrow(() -> new InternalServerException("Default role USER not configured"));
 
         User user = new User();
         user.setFirstname(request.getFirstname());
@@ -45,20 +48,17 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(role);
 
-        User saved_user = userRepository.save(user);
-
+        User savedUser = userRepository.save(user);
 
         String otp = otpUtil.generateOtp();
 
-        EmailOtp email_otp = new EmailOtp();
-        email_otp.setOtp(otp);
-        email_otp.setUser(saved_user);
+        EmailOtp emailOtp = new EmailOtp();
+        emailOtp.setUser(savedUser);
+        emailOtp.setOtp(otp);
 
-        emailOtpRepository.save(email_otp);
+        emailOtpRepository.save(emailOtp);
+        email.sendOtpEmail(savedUser.getEmail(), otp);
 
-        email.sendOtpEmail(user.getEmail(), otp);
-
-        return saved_user;
-
+        return savedUser;
     }
 }

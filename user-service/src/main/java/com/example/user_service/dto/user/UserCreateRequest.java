@@ -1,4 +1,4 @@
-package com.example.user_service.dto;
+package com.example.user_service.dto.user;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -17,7 +17,7 @@ public class UserCreateRequest {
     @NotBlank
     private String password;
 
-    @NotBlank
+    // @NotBlank
     private String role; 
 
 

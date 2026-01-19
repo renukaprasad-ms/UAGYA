@@ -83,6 +83,9 @@ public class User {
     public Role getRole() {
         return role;
     }
+    public String getRoleName() {
+        return role.getRole();
+    }
 
     public boolean getIsEmailVerifed() {
         return this.isEmailVerified;

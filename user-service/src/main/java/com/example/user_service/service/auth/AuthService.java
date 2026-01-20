@@ -3,6 +3,7 @@ package com.example.user_service.service.auth;
 import java.time.LocalDateTime;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import com.example.user_service.dto.auth.AuthResponse;
@@ -23,7 +24,7 @@ public class AuthService {
     private final Otp otpUtil;
     private final EmailService emailService;
     private final JwtService jwtService;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder() ;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthService(UserRepository userRepository,
             EmailOtpRepository emailOtpRepository,
@@ -54,7 +55,7 @@ public class AuthService {
         emailOtp.setUser(user);
         emailOtp.setOtp(otp);
         emailOtp.setUsed(false);
-        emailOtp.setExpiresAt(LocalDateTime.now().plusMinutes(10));
+        emailOtp.setExpiresAt(LocalDateTime.now().plusMinutes(2));
 
         emailOtpRepository.save(emailOtp);
         emailService.sendOtpEmail(user.getEmail(), otp);
@@ -63,7 +64,7 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse verifyOtp(String otp, String email) {
+    public AuthResponse verifyOtp(String otp, String email, boolean rememberDevice) {
 
         if (email == null || email.isBlank()
                 || !email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
@@ -92,7 +93,7 @@ public class AuthService {
         emailOtpRepository.save(emailOtp);
 
         String accessToken = jwtService.generateAccessToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user, rememberDevice);
 
         return new AuthResponse(user, accessToken, refreshToken);
     }
@@ -113,7 +114,35 @@ public class AuthService {
             throw new BadRequestException("Invalid credentials");
         }
 
+        String otp = otpUtil.generateOtp();
+
+        EmailOtp emailOtp = emailOtpRepository.findByUser(user)
+                .orElse(new EmailOtp());
+
+        emailOtp.setUser(user);
+        emailOtp.setOtp(otp);
+        emailOtp.setUsed(false);
+        emailOtp.setExpiresAt(LocalDateTime.now().plusMinutes(2));
+
+        emailOtpRepository.save(emailOtp);
+        emailService.sendOtpEmail(user.getEmail(), otp);
+
         return user;
+    }
+
+    public AuthResponse refreshToken(String refreshToken) {
+        if (refreshToken == null) {
+            throw new BadRequestException("refresh token not found");
+        }
+
+        Jwt jwt = jwtService.verifyRefreshToken(refreshToken);
+
+        String email = jwt.getSubject();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("user not found"));
+        String newAccessToken = jwtService.generateAccessToken(user);
+        return new AuthResponse(user, newAccessToken, refreshToken);
     }
 
 }

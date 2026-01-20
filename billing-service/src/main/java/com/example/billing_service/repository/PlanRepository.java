@@ -9,6 +9,7 @@ import java.util.Optional;
 public interface PlanRepository extends JpaRepository<Plan, Long> {
 
     Optional<Plan> findByCode(String code);
+    Optional<Plan> findById(Long id);
     List<Plan> findByActiveTrue();
     boolean existsByCode(String code);
 }

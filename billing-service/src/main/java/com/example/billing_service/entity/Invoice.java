@@ -31,6 +31,9 @@ public class Invoice {
     @Column(name = "invoice_number", nullable = false, unique = true)
     private String invoiceNumber;
 
+     @Column(name = "payment_order_id", unique = true)
+    private String paymentOrderId;
+
     @Column(name = "user_id", nullable = false)
     private String userId;
 

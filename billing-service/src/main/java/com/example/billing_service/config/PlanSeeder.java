@@ -23,8 +23,8 @@ public class PlanSeeder {
                     "Basic Monthly Plan",
                     PlanType.SUBSCRIPTION,
                     BillingCycle.MONTHLY,
-                    BigDecimal.valueOf(9.99),
-                    "USD"
+                    BigDecimal.valueOf(99),
+                    "INR"
             );
 
             seedPlanIfNotExist(
@@ -33,8 +33,8 @@ public class PlanSeeder {
                     "Basic Yearly Plan",
                     PlanType.SUBSCRIPTION,
                     BillingCycle.YEARLY,
-                    BigDecimal.valueOf(99.99),
-                    "USD"
+                    BigDecimal.valueOf(999),
+                    "INR"
             );
 
             seedPlanIfNotExist(
@@ -43,8 +43,8 @@ public class PlanSeeder {
                     "One Time Access",
                     PlanType.ONE_TIME,
                     BillingCycle.MONTHLY,
-                    BigDecimal.valueOf(19.99),
-                    "USD"
+                    BigDecimal.valueOf(9999),
+                    "INR"
             );
         };
     }

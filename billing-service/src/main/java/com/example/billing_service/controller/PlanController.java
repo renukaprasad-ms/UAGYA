@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
 
-import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,7 +31,7 @@ public class PlanController {
     }
 
     @PostMapping("/add")
-    public ResponseEntity<Map<String, Object>> addPlan(@Valid @RequestBody CreatePlanRequest request) {
+    public ResponseEntity<Map<String, Object>> addPlan( @RequestBody CreatePlanRequest request) {
         Plan plan = planService.addPlan(request.getCode(), request.getName(), request.getPlanType(),
                 request.getBillingCycle(), request.getPrice(), request.getCurrency());
 

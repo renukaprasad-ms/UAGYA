@@ -5,7 +5,9 @@ import java.time.temporal.ChronoUnit;
 
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
@@ -16,17 +18,30 @@ import com.example.user_service.entity.User;
 public class JwtService {
 
     private final JwtEncoder jwtEncoder;
+    private final JwtDecoder jwtDecoder;
 
-    public JwtService(JwtEncoder jwtEncoder) {
+    public JwtService(JwtEncoder jwtEncoder, JwtDecoder jwtDecoder) {
         this.jwtEncoder = jwtEncoder;
+        this.jwtDecoder = jwtDecoder;
+    }
+
+    public Jwt verifyRefreshToken(String refreshToken) {
+        try {
+            return jwtDecoder.decode(refreshToken);
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid or expired refresh token");
+        }
     }
 
     public String generateAccessToken(User user) {
-        return generateToken(user, 15); 
+        return generateToken(user, 15);
     }
 
-    public String generateRefreshToken(User user) {
-        return generateToken(user, 7 * 24 * 60); 
+    public String generateRefreshToken(User user, boolean rememberDevice) {
+        long refreshMinutes = rememberDevice
+            ? 30L * 24 * 60   
+            : 7L * 24 * 60;
+        return generateToken(user, refreshMinutes);
     }
 
     private String generateToken(User user, long minutes) {
@@ -44,8 +59,7 @@ public class JwtService {
         return jwtEncoder.encode(
                 JwtEncoderParameters.from(
                         JwsHeader.with(SignatureAlgorithm.RS256).build(),
-                        claims
-                )
-        ).getTokenValue();
+                        claims))
+                .getTokenValue();
     }
 }

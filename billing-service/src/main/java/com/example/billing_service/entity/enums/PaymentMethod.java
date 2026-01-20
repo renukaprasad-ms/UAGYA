@@ -2,5 +2,6 @@ package com.example.billing_service.entity.enums;
 
 public enum PaymentMethod {
     CARD,
-    UPI
+    UPI,
+    NETBANKING
 }

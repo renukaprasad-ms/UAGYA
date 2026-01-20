@@ -12,11 +12,13 @@ import com.example.user_service.service.auth.AuthService;
 import com.example.user_service.utils.Response;
 
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import com.example.user_service.exception.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,7 +48,9 @@ public class AuthController {
             @RequestBody VerifyOtpRequest request,
             HttpServletResponse response) {
 
-        AuthResponse res = authService.verifyOtp(request.getOtp(), request.getEmail());
+        AuthResponse res = authService.verifyOtp(request.getOtp(), request.getEmail(), request.getRememberDevice());
+
+        boolean rememberDevice = request.getRememberDevice();
 
         Cookie accessTokenCookie = new Cookie("access_token", res.getAccessToken());
         accessTokenCookie.setHttpOnly(true);
@@ -58,7 +62,11 @@ public class AuthController {
         refreshTokenCookie.setHttpOnly(true);
         refreshTokenCookie.setSecure(true);
         refreshTokenCookie.setPath("/");
-        refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60);
+        if (rememberDevice) {
+            refreshTokenCookie.setMaxAge(30 * 24 * 60 * 60);
+        } else {
+            refreshTokenCookie.setMaxAge(-1);
+        }
 
         response.addCookie(accessTokenCookie);
         response.addCookie(refreshTokenCookie);
@@ -69,6 +77,7 @@ public class AuthController {
         userRes.put("email", res.getUser().getEmail());
         userRes.put("role", res.getUser().getRoleName());
         userRes.put("status", res.getUser().getStatus());
+        userRes.put("id", res.getUser().getId());
 
         return ResponseEntity.status(200).body(
                 reponseUtil.response(true, 200, userRes, "OTP verified successfully", null));
@@ -104,6 +113,44 @@ public class AuthController {
         userRes.put("email", user.getEmail());
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 reponseUtil.response(true, 204, userRes, "OTP sent to email", null));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<Map<String, Object>> refresh(HttpServletRequest request,
+            HttpServletResponse response) {
+        if (request.getCookies() == null) {
+            throw new BadRequestException("Refresh token cookie missing");
+        }
+        String refreshToken = null;
+        for (Cookie cookie : request.getCookies()) {
+            if ("refresh_token".equals(cookie.getName())) {
+                refreshToken = cookie.getValue();
+            }
+        }
+
+        if (refreshToken != null) {
+            AuthResponse res = authService.refreshToken(refreshToken);
+
+            Cookie accessTokenCookie = new Cookie("access_token", res.getAccessToken());
+            accessTokenCookie.setHttpOnly(true);
+            accessTokenCookie.setSecure(true);
+            accessTokenCookie.setPath("/");
+            accessTokenCookie.setMaxAge(15 * 60);
+
+            Cookie refreshTokenCookie = new Cookie("refresh_token", res.getRefreshToken());
+            refreshTokenCookie.setHttpOnly(true);
+            refreshTokenCookie.setSecure(true);
+            refreshTokenCookie.setPath("/");
+            refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60);
+
+            response.addCookie(accessTokenCookie);
+            response.addCookie(refreshTokenCookie);
+        } else {
+            throw new BadRequestException("Refresh token cookie missing");
+        }
+
+        return ResponseEntity.status(200).body(
+                reponseUtil.response(true, 200, null, "tokens refreshed", null));
     }
 
 }

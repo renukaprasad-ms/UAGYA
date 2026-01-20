@@ -3,6 +3,13 @@
   "configurations": [
     {
       "type": "java",
+      "name": "BillingServiceApplication",
+      "request": "launch",
+      "mainClass": "com.example.billing_service.BillingServiceApplication",
+      "projectName": ""
+    },
+    {
+      "type": "java",
       "name": "Spring Boot - User Service",
       "request": "launch",
       "mainClass": "com.example.user_service.UserApplication",

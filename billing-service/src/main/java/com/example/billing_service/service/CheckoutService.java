@@ -1,6 +1,7 @@
 package com.example.billing_service.service;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
@@ -24,51 +25,69 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class CheckoutService {
-    private final PlanRepository planRepository;
-    private final InvoiceRepository invoiceRepository;
-    private final PaymentProviderFactory paymentProviderFactory;
-    private final UserSubscriptionRepository userSubscriptionRepository;
+        private final PlanRepository planRepository;
+        private final InvoiceRepository invoiceRepository;
+        private final PaymentProviderFactory paymentProviderFactory;
+        private final UserSubscriptionRepository userSubscriptionRepository;
 
-    public PaymentOrderResponse checkout(String userId, Long PlanId, PaymentProvider paymentProvider,
-            PaymentMethod paymentMethod) {
+        public PaymentOrderResponse checkout(
+                        String userId,
+                        Long planId,
+                        PaymentProvider paymentProvider,
+                        PaymentMethod paymentMethod) {
 
-        Plan plan = planRepository.findById(PlanId)
-                .orElseThrow(() -> new BadRequestExecption("Plan not found"));
+                Plan plan = planRepository.findById(planId)
+                                .orElseThrow(() -> new BadRequestExecption("Plan not found"));
 
-        UserSubscription subscription = userSubscriptionRepository.save(
-                UserSubscription.builder()
-                        .userId(userId)
-                        .plan(plan)
-                        .billingCycle(plan.getBillingCycle())
-                        .status(SubscriptionStatus.PENDING)
-                        .startDate(Instant.now())
-                        .paymentProvider(paymentProvider)
-                        .paymentMethod(paymentMethod)
-                        .autoDebitEnabled(false)
-                        .build());
+                // 🔍 Find active or pending subscription
+                UserSubscription subscription = userSubscriptionRepository
+                                .findByUserIdAndStatusIn(
+                                                userId,
+                                                List.of(
+                                                                SubscriptionStatus.ACTIVE,
+                                                                SubscriptionStatus.PENDING))
+                                .orElseGet(() -> {
+                                        return UserSubscription.builder()
+                                                        .userId(userId)
+                                                        .status(SubscriptionStatus.PENDING)
+                                                        .startDate(Instant.now())
+                                                        .autoDebitEnabled(false)
+                                                        .build();
+                                });
 
+                // 🔁 PLAN CHANGE OR FIRST ASSIGNMENT
+                subscription.setPlan(plan);
+                subscription.setBillingCycle(plan.getBillingCycle());
+                subscription.setPaymentProvider(paymentProvider);
+                subscription.setPaymentMethod(paymentMethod);
+                subscription.setUpdatedAt(Instant.now());
 
-        Invoice invoice = invoiceRepository.save(
-                Invoice.builder()
-                        .invoiceNumber("INV-" + System.currentTimeMillis())
-                        .userId(userId)
-                        .plan(plan)
-                        .subscription(subscription)
-                        .billingCycle(plan.getBillingCycle())
-                        .amount(plan.getPrice())
-                        .totalAmount(plan.getPrice())
-                        .currency(plan.getCurrency())
-                        .status(InvoiceStatus.ISSUED)
-                        .issuedAt(Instant.now())
-                        .dueDate(Instant.now().plusSeconds(86400))
-                        .build());
+                subscription = userSubscriptionRepository.save(subscription);
 
-        PaymentProviderService providerService = paymentProviderFactory.getProvider(paymentProvider);
-        PaymentOrderResponse orderResponse =
-        providerService.createOrder(invoice, paymentMethod);
-        invoice.setPaymentOrderId(orderResponse.getOrderId());
-invoiceRepository.save(invoice);
-        return orderResponse ;
+                // 🧾 ALWAYS CREATE A NEW INVOICE
+                Invoice invoice = invoiceRepository.save(
+                                Invoice.builder()
+                                                .invoiceNumber("INV-" + System.currentTimeMillis())
+                                                .userId(userId)
+                                                .plan(plan)
+                                                .subscription(subscription)
+                                                .billingCycle(plan.getBillingCycle())
+                                                .amount(plan.getPrice())
+                                                .totalAmount(plan.getPrice())
+                                                .currency(plan.getCurrency())
+                                                .status(InvoiceStatus.ISSUED)
+                                                .issuedAt(Instant.now())
+                                                .dueDate(Instant.now().plusSeconds(86400))
+                                                .build());
 
-    }
+                PaymentProviderService providerService = paymentProviderFactory.getProvider(paymentProvider);
+
+                PaymentOrderResponse orderResponse = providerService.createOrder(invoice, paymentMethod);
+
+                invoice.setPaymentOrderId(orderResponse.getOrderId());
+                invoiceRepository.save(invoice);
+
+                return orderResponse;
+        }
+
 }

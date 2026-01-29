@@ -1,0 +1,42 @@
+services:
+  user-db:
+    image: postgres:16
+    env_file:
+      - ./user-service/.env
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+
+  billing-db:
+    image: postgres:16
+    env_file:
+      - ./billing-service/.env
+    volumes:
+      - billing_db_data:/var/lib/postgresql/data
+
+  user-service:
+    build:
+      context: ./user-service
+    depends_on:
+      - user-db
+    ports:
+      - "8880:8880"
+    env_file:
+      - ./user-service/.env
+    environment:
+      DB_HOST: user-db
+
+  billing-service:
+    build:
+      context: ./billing-service
+    depends_on:
+      - billing-db
+    ports:
+      - "8881:8881"
+    env_file:
+      - ./billing-service/.env
+    environment:
+      DB_HOST: billing-db
+
+volumes:
+  user_db_data:
+  billing_db_data:

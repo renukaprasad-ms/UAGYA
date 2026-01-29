@@ -13,7 +13,7 @@ public class RoleSeeder {
     @Bean
     CommandLineRunner seedRoles(RoleRepository roleRepository) {
         return args -> {
-            seedRoleIfNotExists(roleRepository, "user");
+            seedRoleIfNotExists(roleRepository, "USER");
         };
     }
 

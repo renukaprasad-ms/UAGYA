@@ -4,8 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 
 public class ResendOtpRequest {
-    @NotNull
-    @Email
+    @NotNull(message = "email is required")
+    @Email(message = "enter valid email")
     private String email;
 
     public String getEmail() {

@@ -5,21 +5,17 @@ import jakarta.validation.constraints.NotBlank;
 
 public class UserCreateRequest {
 
-    @NotBlank
+    @NotBlank(message = "First name is required")
     private String firstname;
 
     private String lastname;
 
-    @Email
-    @NotBlank
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email must be valid")
     private String email;
 
-    @NotBlank
+    @NotBlank(message = "Password is required")
     private String password;
-
-    // @NotBlank
-    private String role; 
-
 
     public String getFirstname() {
         return firstname;
@@ -48,16 +44,9 @@ public class UserCreateRequest {
     public String getPassword() {
         return password;
     }
-    
+
     public void setPassword(String password) {
         this.password = password;
     }
 
-    public String getRoleCode() {
-        return role;
-    }
-
-    public void setRoleCode(String role) {
-        this.role = role;
-    }
 }

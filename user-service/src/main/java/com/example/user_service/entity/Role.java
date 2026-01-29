@@ -5,7 +5,9 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "roles")
+@Table(name = "roles", indexes = {
+        @Index(name = "idx_role_name", columnList = "role_name")
+})
 public class Role {
 
     @Id
@@ -27,7 +29,7 @@ public class Role {
 
         this.createdAt = now;
         this.updatedAt = now;
-     }
+    }
 
     @PreUpdate
     protected void onUpdate() {

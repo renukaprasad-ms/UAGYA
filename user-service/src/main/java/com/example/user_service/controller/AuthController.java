@@ -7,6 +7,7 @@ import com.example.user_service.dto.auth.AuthResponse;
 import com.example.user_service.dto.auth.LoginRequest;
 import com.example.user_service.dto.auth.ResendOtpRequest;
 import com.example.user_service.dto.auth.VerifyOtpRequest;
+import com.example.user_service.entity.Application;
 import com.example.user_service.entity.User;
 import com.example.user_service.service.auth.AuthService;
 import com.example.user_service.utils.Response;
@@ -14,6 +15,7 @@ import com.example.user_service.utils.Response;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,18 +39,21 @@ public class AuthController {
     }
 
     @PostMapping("/resend-otp")
-    public ResponseEntity<Map<String, Object>> resendOtp(@RequestBody ResendOtpRequest request) {
-        String res = authService.resendOtp(request.getEmail());
+    public ResponseEntity<Map<String, Object>> resendOtp(@RequestBody @Valid ResendOtpRequest request, HttpServletRequest req) {
+        Application app =(Application) req.getAttribute("APPLICATION");
+        String res = authService.resendOtp(request, app);
         return ResponseEntity.status(200).body(
                 reponseUtil.response(true, 200, res, "OTP sent to email", null));
     }
 
     @PostMapping("/verify-otp")
     public ResponseEntity<Map<String, Object>> verifyOtp(
-            @RequestBody VerifyOtpRequest request,
-            HttpServletResponse response) {
+            @Valid @RequestBody VerifyOtpRequest request,
+            HttpServletResponse response, HttpServletRequest req) {
 
-        AuthResponse res = authService.verifyOtp(request.getOtp(), request.getEmail(), request.getRememberDevice());
+        Application app = (Application) req.getAttribute("APPLICATION");
+
+        AuthResponse res = authService.verifyOtp(request, app);
 
         boolean rememberDevice = request.getRememberDevice();
 
@@ -75,7 +80,6 @@ public class AuthController {
         userRes.put("firstname", res.getUser().getFirstname());
         userRes.put("lastname", res.getUser().getLastname());
         userRes.put("email", res.getUser().getEmail());
-        userRes.put("role", res.getUser().getRoleName());
         userRes.put("status", res.getUser().getStatus());
         userRes.put("id", res.getUser().getId());
 
@@ -104,8 +108,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request) {
-        User user = authService.login(request.getEmail(), request.getPassword());
+    public ResponseEntity<Map<String, Object>> login(@RequestBody @Valid LoginRequest request, HttpServletRequest req) {
+        Application app = (Application) req.getAttribute("APPLICATION");
+        User user = authService.login(request,app);
 
         Map<String, Object> userRes = new HashMap<>();
         userRes.put("firstname", user.getFirstname());

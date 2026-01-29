@@ -53,7 +53,6 @@ public class JwtService {
                 .expiresAt(now.plus(minutes, ChronoUnit.MINUTES))
                 .subject(user.getEmail())
                 .claim("userId", user.getId())
-                .claim("role", user.getRoleName())
                 .build();
 
         return jwtEncoder.encode(

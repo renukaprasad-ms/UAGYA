@@ -24,51 +24,51 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomAccessDeniedHandler accessDeniedHandler;
-    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+        private final CustomAccessDeniedHandler accessDeniedHandler;
+        private final CustomAuthenticationEntryPoint authenticationEntryPoint;
 
-    @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        @Bean
+        SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        http
-                .cors(Customizer.withDefaults())
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/health", "/webhooks/razorpay").permitAll()
-                        .anyRequest().authenticated())
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler))
-                .oauth2ResourceServer(oauth -> oauth.bearerTokenResolver(new CookieJwtTokenResolver())
-                        .jwt(jwt -> jwt.decoder(jwtDecoder())));
+                http
+                                .cors(Customizer.withDefaults())
+                                .csrf(csrf -> csrf.disable())
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                                .requestMatchers("/health", "/webhooks/razorpay").permitAll()
+                                                .anyRequest().authenticated())
+                                .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint)
+                                                .accessDeniedHandler(accessDeniedHandler))
+                                .oauth2ResourceServer(oauth -> oauth.bearerTokenResolver(new CookieJwtTokenResolver())
+                                                .jwt(jwt -> jwt.decoder(jwtDecoder())));
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    @Bean
-    JwtDecoder jwtDecoder() {
-        RSAPublicKey publicKey = RsaKeyLoader.loadPublicKey();
-        return NimbusJwtDecoder.withPublicKey(publicKey).build();
-    }
+        @Bean
+        JwtDecoder jwtDecoder() {
+                RSAPublicKey publicKey = RsaKeyLoader.loadPublicKey();
+                return NimbusJwtDecoder.withPublicKey(publicKey).build();
+        }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-                "http://localhost:5173"));
-        config.setAllowedMethods(List.of(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of(
-                "Authorization",
-                "Content-Type",
-                "Accept"));
-        config.setAllowCredentials(true);
+                CorsConfiguration config = new CorsConfiguration();
+                config.setAllowedOriginPatterns(List.of(
+                                "http://localhost:5173", "https://*.ngrok-free.app"));
+                config.setAllowedMethods(List.of(
+                                "GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                config.setAllowedHeaders(List.of(
+                                "Authorization",
+                                "Content-Type",
+                                "Accept"));
+                config.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", config);
 
-        return source;
-    }
+                return source;
+        }
 
 }

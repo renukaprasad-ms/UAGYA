@@ -1,0 +1,9 @@
+version: "2"
+authtoken: ${2xxHrSPIS5fCPtdEFaLCAyapUWQ_2SZKs7kjrUyjXbHnrrHHm}
+tunnels:
+  user-service:
+    proto: http
+    addr: 8081
+  billing-service:
+    proto: http
+    addr: 8083

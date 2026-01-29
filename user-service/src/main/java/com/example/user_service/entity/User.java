@@ -7,7 +7,9 @@ import com.example.user_service.entity.enums.UserStatus;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users",indexes = {
+        @Index(name = "idx_user_email", columnList = "email")
+    })
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,9 +26,6 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "role_id", nullable = false)
-    private Role role;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -78,12 +77,6 @@ public class User {
         return password;
     }
 
-    public Role getRole() {
-        return role;
-    }
-    public String getRoleName() {
-        return role.getRole();
-    }
 
     public boolean getIsEmailVerifed() {
         return this.isEmailVerified;
@@ -121,9 +114,6 @@ public class User {
         this.password = password;
     }
 
-    public void setRole(Role role) {
-        this.role = role;
-    }
 
     public void setStatus(UserStatus status) {
         this.status = status;

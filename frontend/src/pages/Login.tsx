@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import apiService from "../services/apiService";
 
@@ -19,6 +19,14 @@ type LoginResponse = {
   };
 };
 
+type CheckEmailResponse = {
+  success?: boolean;
+  message?: string;
+  data?: {
+    exists?: boolean;
+  };
+};
+
 export default function Login() {
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState({
@@ -30,11 +38,77 @@ export default function Login() {
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [emailCheckStatus, setEmailCheckStatus] = useState<
+    "idle" | "checking" | "exists" | "missing" | "error"
+  >("idle");
+  const [emailCheckMessage, setEmailCheckMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const email = formValues.email.trim();
+
+    if (!email || !email.includes("@")) {
+      setEmailCheckStatus("idle");
+      setEmailCheckMessage(null);
+      return;
+    }
+
+    setEmailCheckStatus("idle");
+    setEmailCheckMessage(null);
+
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      setEmailCheckStatus("checking");
+
+      apiService
+        .post<CheckEmailResponse>("/api/user/check-email", { email })
+        .then((response) => {
+          if (cancelled) return;
+          const payload = response.data;
+
+          if (payload?.success === false) {
+            setEmailCheckStatus("error");
+            setEmailCheckMessage(
+              payload?.message || "Unable to verify email right now.",
+            );
+            return;
+          }
+
+          if (payload?.data?.exists) {
+            setEmailCheckStatus("exists");
+            setEmailCheckMessage(null);
+            return;
+          }
+
+          setEmailCheckStatus("missing");
+          setEmailCheckMessage("Email not found. Please register first.");
+        })
+        .catch((error) => {
+          if (cancelled) return;
+          setEmailCheckStatus("error");
+          setEmailCheckMessage(
+            error instanceof Error
+              ? error.message
+              : "Unable to verify email right now.",
+          );
+        });
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [formValues.email]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("loading");
     setStatusMessage(null);
+
+    if (emailCheckStatus === "missing") {
+      setStatus("error");
+      setStatusMessage("Email not found. Please register first.");
+      return;
+    }
 
     try {
       const response = await apiService.post<LoginResponse>("/api/auth/login", {
@@ -86,6 +160,15 @@ export default function Login() {
             setFormValues((prev) => ({ ...prev, email: event.target.value }))
           }
         />
+        {emailCheckStatus === "checking" ? (
+          <p className="text-xs text-slate-400">Checking email...</p>
+        ) : null}
+        {emailCheckStatus === "missing" && emailCheckMessage ? (
+          <p className="text-xs text-rose-300">{emailCheckMessage}</p>
+        ) : null}
+        {emailCheckStatus === "error" && emailCheckMessage ? (
+          <p className="text-xs text-rose-300">{emailCheckMessage}</p>
+        ) : null}
       </div>
       <div className="space-y-2">
         <label className={labelClassName} htmlFor="login-password">
@@ -128,7 +211,7 @@ export default function Login() {
       <button
         className="w-full rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-emerald-400 px-4 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-cyan-500/30 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
         type="submit"
-        disabled={status === "loading"}
+        disabled={status === "loading" || emailCheckStatus === "missing"}
       >
         {status === "loading" ? "Sending OTP..." : "Continue to console"}
       </button>

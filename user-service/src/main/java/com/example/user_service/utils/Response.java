@@ -24,7 +24,6 @@ public class Response {
         if (errorMessage != null) {
             response.put("error", errorMessage);
         }
-
         return response;
     }
 }

@@ -8,7 +8,6 @@ import com.example.user_service.dto.auth.LoginRequest;
 import com.example.user_service.dto.auth.ResendOtpRequest;
 import com.example.user_service.dto.auth.VerifyOtpRequest;
 import com.example.user_service.entity.Application;
-import com.example.user_service.entity.User;
 import com.example.user_service.service.auth.AuthService;
 import com.example.user_service.utils.Response;
 
@@ -55,7 +54,6 @@ public class AuthController {
 
         AuthResponse res = authService.verifyOtp(request, app);
 
-        boolean rememberDevice = request.getRememberDevice();
 
         Cookie accessTokenCookie = new Cookie("access_token", res.getAccessToken());
         accessTokenCookie.setHttpOnly(true);
@@ -66,15 +64,18 @@ public class AuthController {
         Cookie refreshTokenCookie = new Cookie("refresh_token", res.getRefreshToken());
         refreshTokenCookie.setHttpOnly(true);
         refreshTokenCookie.setSecure(true);
-        refreshTokenCookie.setPath("/");
-        if (rememberDevice) {
-            refreshTokenCookie.setMaxAge(30 * 24 * 60 * 60);
-        } else {
-            refreshTokenCookie.setMaxAge(-1);
-        }
+        refreshTokenCookie.setPath("/api/auth/refresh");
+        refreshTokenCookie.setMaxAge(30 * 24 * 60 * 60);
+
+        Cookie refreshTokenLegacy = new Cookie("refresh_token", null);
+        refreshTokenLegacy.setMaxAge(0);
+        refreshTokenLegacy.setPath("/");
+        refreshTokenLegacy.setHttpOnly(true);
+        refreshTokenLegacy.setSecure(true);
 
         response.addCookie(accessTokenCookie);
         response.addCookie(refreshTokenCookie);
+        response.addCookie(refreshTokenLegacy);
 
         Map<String, Object> userRes = new HashMap<>();
         userRes.put("firstname", res.getUser().getFirstname());
@@ -88,7 +89,25 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, Object>> logout(HttpServletResponse response) {
+    public ResponseEntity<Map<String, Object>> logout(HttpServletResponse response, HttpServletRequest request) {
+        String refreshToken = null;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("refresh_token".equals(cookie.getName())) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+        if (refreshToken == null) {
+            refreshToken = request.getHeader("X-Refresh-Token");
+        }
+
+        if (refreshToken == null) {
+            throw new BadRequestException("Refresh token cookie missing");
+        }
+
+        authService.logout(refreshToken);
 
         Cookie access = new Cookie("access_token", null);
         access.setMaxAge(0);
@@ -97,27 +116,59 @@ public class AuthController {
 
         Cookie refresh = new Cookie("refresh_token", null);
         refresh.setMaxAge(0);
-        refresh.setPath("/");
+        refresh.setPath("/api/auth/refresh");
         refresh.setHttpOnly(true);
+        refresh.setSecure(true);
+
+        Cookie refreshLegacy = new Cookie("refresh_token", null);
+        refreshLegacy.setMaxAge(0);
+        refreshLegacy.setPath("/");
+        refreshLegacy.setHttpOnly(true);
+        refreshLegacy.setSecure(true);
 
         response.addCookie(access);
         response.addCookie(refresh);
+        response.addCookie(refreshLegacy);
 
         return ResponseEntity.status(200).body(
                 reponseUtil.response(true, 200, null, "Logged out", null));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody @Valid LoginRequest request, HttpServletRequest req) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody @Valid LoginRequest request, HttpServletRequest req, HttpServletResponse response) {
         Application app = (Application) req.getAttribute("APPLICATION");
-        User user = authService.login(request,app);
+        AuthResponse res = authService.login(request,app);
+
+        Cookie accessTokenCookie = new Cookie("access_token", res.getAccessToken());
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(true);
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(15 * 60);
+
+        Cookie refreshTokenCookie = new Cookie("refresh_token", res.getRefreshToken());
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setPath("/api/auth/refresh");
+        refreshTokenCookie.setMaxAge(30 * 24 * 60 * 60);
+
+        Cookie refreshTokenLegacy = new Cookie("refresh_token", null);
+        refreshTokenLegacy.setMaxAge(0);
+        refreshTokenLegacy.setPath("/");
+        refreshTokenLegacy.setHttpOnly(true);
+        refreshTokenLegacy.setSecure(true);
+
+        response.addCookie(accessTokenCookie);
+        response.addCookie(refreshTokenCookie);
+        response.addCookie(refreshTokenLegacy);
 
         Map<String, Object> userRes = new HashMap<>();
-        userRes.put("firstname", user.getFirstname());
-        userRes.put("lastname", user.getLastname());
-        userRes.put("email", user.getEmail());
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                reponseUtil.response(true, 204, userRes, "OTP sent to email", null));
+        userRes.put("firstname", res.getUser().getFirstname());
+        userRes.put("lastname", res.getUser().getLastname());
+        userRes.put("email", res.getUser().getEmail());
+        userRes.put("status", res.getUser().getStatus());
+        userRes.put("id", res.getUser().getId());
+        return ResponseEntity.status(HttpStatus.OK).body(
+                reponseUtil.response(true, 200, userRes, "Login successful", null));
     }
 
     @PostMapping("/refresh")
@@ -145,11 +196,18 @@ public class AuthController {
             Cookie refreshTokenCookie = new Cookie("refresh_token", res.getRefreshToken());
             refreshTokenCookie.setHttpOnly(true);
             refreshTokenCookie.setSecure(true);
-            refreshTokenCookie.setPath("/");
+            refreshTokenCookie.setPath("/api/auth/refresh");
             refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60);
 
             response.addCookie(accessTokenCookie);
             response.addCookie(refreshTokenCookie);
+
+            Cookie refreshTokenLegacy = new Cookie("refresh_token", null);
+            refreshTokenLegacy.setMaxAge(0);
+            refreshTokenLegacy.setPath("/");
+            refreshTokenLegacy.setHttpOnly(true);
+            refreshTokenLegacy.setSecure(true);
+            response.addCookie(refreshTokenLegacy);
         } else {
             throw new BadRequestException("Refresh token cookie missing");
         }

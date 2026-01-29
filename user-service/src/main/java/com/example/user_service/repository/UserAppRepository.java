@@ -10,5 +10,6 @@ import com.example.user_service.entity.UserApp;
 
 public interface UserAppRepository extends JpaRepository<UserApp, Long>{
     Optional<UserApp> findByUser(User user);
+    Optional<UserApp> findByUserAndApp(User user, Application app);
     boolean existsByuserAndApp( User user, Application app );
 }

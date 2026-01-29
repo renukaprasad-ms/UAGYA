@@ -33,18 +33,11 @@ public class JwtService {
         }
     }
 
-    public String generateAccessToken(User user) {
-        return generateToken(user, 15);
+    public String generateAccessToken(User user, Long appId, String deviceId, String role) {
+        return generateToken(user, appId, deviceId, role, 15);
     }
 
-    public String generateRefreshToken(User user, boolean rememberDevice) {
-        long refreshMinutes = rememberDevice
-            ? 30L * 24 * 60   
-            : 7L * 24 * 60;
-        return generateToken(user, refreshMinutes);
-    }
-
-    private String generateToken(User user, long minutes) {
+    private String generateToken(User user, Long appId, String deviceId, String role, long minutes) {
         Instant now = Instant.now();
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
@@ -53,6 +46,9 @@ public class JwtService {
                 .expiresAt(now.plus(minutes, ChronoUnit.MINUTES))
                 .subject(user.getEmail())
                 .claim("userId", user.getId())
+                .claim("appId", appId)
+                .claim("deviceId", deviceId)
+                .claim("role", role)
                 .build();
 
         return jwtEncoder.encode(
